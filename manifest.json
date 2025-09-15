@@ -1,5 +1,5 @@
 {
-  "name": "Car Service WebApp",
+  "name": "Car Service",
   "short_name": "CarService",
   "start_url": "index.html",
   "display": "standalone",

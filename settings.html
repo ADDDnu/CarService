@@ -1,60 +1,58 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Car Service · ตั้งค่า</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="style.css" />
-  <script src="app.js" defer></script>
 </head>
-<body class="has-tabbar" onload="renderSettings()">
+<body class="has-tabbar" onload="renderSettings(); mqttConnect();">
   <header>
     <img src="logo.png" alt="Car Service Logo" class="logo">
     <h1>ตั้งค่า</h1>
   </header>
 
   <main>
-    <form onsubmit="saveSettings(event)">
-      <label>MQTT WebSocket URL</label>
-      <input type="text" id="cfg_mqtt_url" placeholder="ws://172.16.18.200:9001" />
-
-      <label>MQTT Username</label>
-      <input type="text" id="cfg_mqtt_user" placeholder="mqttadmin" />
-
-      <label>MQTT Password</label>
-      <input type="password" id="cfg_mqtt_pass" placeholder="••••••••" />
-
-      <button type="submit">บันทึกการตั้งค่า</button>
-    </form>
-
-    <hr/>
-    <h3>นำออก / นำเข้าข้อมูล</h3>
-    <div class="stat-card" style="flex-direction:column;align-items:flex-start">
-      <div>
-        <button onclick="exportData()">⬇️ Export (.json)</button>
-      </div>
-      <div>
-        <label style="margin-top:12px">Import (.json):</label>
-        <input type="file" id="import_file" accept="application/json" />
+    <div class="stat-card">
+      <h3>MQTT</h3>
+      <label>WebSocket URL:</label>
+      <input type="text" id="cfg_mqtt_url" placeholder="ws://broker:9001" />
+      <label>Username:</label>
+      <input type="text" id="cfg_mqtt_user" />
+      <label>Password:</label>
+      <input type="password" id="cfg_mqtt_pass" />
+      <div style="margin-top:8px">
+        <button onclick="saveSettings(event)">บันทึก</button>
       </div>
     </div>
-  
-    <hr/>
-    <h3>กู้คืน / นำเข้าข้อมูลแบบวางข้อความ</h3>
+
+    <div class="stat-card">
+      <h3>สถานะ MQTT</h3>
+      <p id="mqtt_status" style="font-weight:bold;color:#666;">กำลังเชื่อมต่อ...</p>
+    </div>
+
+    <div class="stat-card">
+      <h3>สำรอง/กู้คืน (ไฟล์บนเครื่อง)</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="exportData()">Export (.json)</button>
+        <label class="badge">
+          Import (.json) <input type="file" id="import_file" accept="application/json" style="display:none">
+        </label>
+      </div>
+    </div>
+
     <div class="stat-card" style="flex-direction:column;align-items:flex-start">
+      <h3>กู้คืน / นำเข้าข้อมูลแบบวางข้อความ</h3>
       <button onclick="restoreFromBackup()">♻️ กู้คืนจาก backup ภายในเบราว์เซอร์</button>
       <label style="margin-top:12px">วาง JSON แล้วกดนำเข้า:</label>
       <textarea id="paste_json" rows="6" style="width:100%;font-family:ui-monospace,Consolas,monospace"></textarea>
       <div><button onclick="importFromTextarea()">นำเข้าจากข้อความ</button></div>
     </div>
 
-  
-    <hr/>
-    <h3>สำรอง/กู้คืนผ่าน Google Drive</h3>
     <div class="stat-card" style="flex-direction:column;align-items:flex-start">
+      <h3>สำรอง/กู้คืนผ่าน Google Drive</h3>
       <label>Google API Key</label>
       <input type="text" id="gapi_key" placeholder="AIza... (API Key)" />
       <label>OAuth Client ID</label>
@@ -77,21 +75,31 @@
         * ต้องมี <b>Google API Key</b> และ <b>OAuth Client ID</b> (OAuth type: Web) พร้อมอนุญาตที่อยู่เว็บของคุณใน Authorized JavaScript origins
       </p>
     </div>
-
   </main>
 
-  <div id="tabbar">
-    <nav class="tabbar">
-      <a href="index.html"><span class="icon">🏠</span><span>หน้าหลัก</span></a>
-      <a href="cars.html"><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
-      <a href="add.html"><span class="icon">📝</span><span>บันทึก</span></a>
-      <a href="settings.html" class="active"><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
-    </nav>
-  </div>
+  <div id="tabbar"></div>
+
   <script src="https://apis.google.com/js/api.js"></script>
   <script src="drive.js"></script>
-
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="mqtt.js"></script>
+  <script src="app.js"></script>
   <script>
+    renderTabbar('settings');
+    // Update MQTT status indicator
+    setInterval(() => {
+      const el = document.getElementById('mqtt_status');
+      if (!el) return;
+      if (typeof mqttIsConnected === 'function' && mqttIsConnected()) {
+        el.textContent = "✅ Connected";
+        el.style.color = "green";
+      } else {
+        el.textContent = "❌ Disconnected";
+        el.style.color = "red";
+      }
+    }, 1200);
+
+    // Prefill Google Drive cfg
     (function(){
       try{
         const cfg = JSON.parse(localStorage.getItem('gdrive_cfg')||'{}');
@@ -99,9 +107,8 @@
         if (cfg.clientId) document.getElementById('gapi_client').value = cfg.clientId;
         if (cfg.filename) document.getElementById('gdrive_filename').value = cfg.filename;
       }catch(e){}
-      if (window.updateGdriveUI) setTimeout(updateGdriveUI, 600);
+      if (window.updateGdriveUI) setTimeout(updateGdriveUI, 800);
     })();
   </script>
 </body>
-
 </html>

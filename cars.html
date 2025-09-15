@@ -1,30 +1,26 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Car Service · ข้อมูลรถ</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <script src="mqtt.js"></script>
-  <script src="app.js" defer></script>
 </head>
 <body class="has-tabbar" onload="renderCars()">
   <header>
     <img src="logo.png" alt="Car Service Logo" class="logo">
     <h1>ข้อมูลรถ</h1>
   </header>
+
   <main id="cars-list"></main>
-  <div id="tabbar">
-    <nav class="tabbar">
-      <a href="index.html"><span class="icon">🏠</span><span>หน้าหลัก</span></a>
-      <a href="cars.html" class="active"><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
-      <a href="add.html"><span class="icon">📝</span><span>บันทึก</span></a>
-      <a href="settings.html"><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
-    </nav>
-  </div>
+
+  <div id="tabbar"></div>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="mqtt.js"></script>
+  <script src="app.js"></script>
+  <script>renderTabbar('cars');</script>
 </body>
 </html>
