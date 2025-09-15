@@ -43,3 +43,18 @@ hr{border:0;border-top:1px solid var(--border);margin:12px 0}
 .tabbar a .icon{font-size:18px;line-height:18px}
 .tabbar a.active{color:var(--primary);font-weight:600}
 body.has-tabbar{padding-bottom:64px}
+
+.grid-check {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* ✅ บังคับให้มี 3 คอลัมน์ */
+  gap: 0.5rem 1rem;                       /* ระยะห่างระหว่างช่อง */
+  margin: 0.5rem 0 1rem;
+}
+
+.grid-check label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 14px;
+}
+
