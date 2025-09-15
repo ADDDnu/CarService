@@ -28,8 +28,48 @@ function getCars(){ return JSON.parse(localStorage.getItem("cars") || "[]"); }
 function setCars(cars){ localStorage.setItem("cars", JSON.stringify(cars)); }
 
 // ===== Dashboard / Home =====
+
 function renderHome(){
   if (typeof mqttConnect === 'function') try{ mqttConnect(); }catch(e){}
+  renderTabbar('home');
+  const all = getCars();
+  // รวมล่าสุดต่อคัน (key=plate)
+  const map = new Map();
+  for (let i = all.length - 1; i >= 0; i--) {
+    const it = all[i];
+    if (!map.has(it.plate)) map.set(it.plate, it);
+  }
+  const cars = Array.from(map.values());
+  const total = cars.length;
+  const home = document.getElementById('home');
+  let listHTML = '';
+  cars.forEach(c => {
+    const mm = [c.make, c.model].filter(Boolean).join(' ');
+    listHTML += `
+      <div class="stat-card">
+        <div>
+          <div style="font-size:18px;font-weight:800;">${c.plate}</div>
+          <div style="font-size:13px;color:#666;">${mm || '—'}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-self:center;">
+          <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${c.plate}')">ดูข้อมูล</a>
+          <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${all.findIndex(r => r.plate===c.plate)}')">แก้ไข</a>
+        </div>
+      </div>
+    `;
+  });
+
+  home.innerHTML = `
+    <div class="stat-card">
+      <div>
+        <div style="font-size:14px;color:#666;">จำนวนรถในระบบ</div>
+        <div style="font-size:28px;font-weight:800;">${total}</div>
+      </div>
+      <a href="cars.html" class="badge">ดูข้อมูลรถ ➜</a>
+    </div>
+    ${listHTML || '<p>ยังไม่มีข้อมูลรถ กด “บันทึก” ที่แท็บล่างเพื่อเพิ่มคันแรก</p>'}
+  `;
+}
   renderTabbar('home');
   const cars = getCars();
   const total = cars.length;
@@ -100,6 +140,8 @@ function saveCar(e){
 
   const car  = {
     plate: document.getElementById("plate").value.trim(),
+    make: document.getElementById("make") ? document.getElementById("make").value.trim() : "",
+    model: document.getElementById("model") ? document.getElementById("model").value.trim() : "",
     serviceDate: document.getElementById("serviceDate").value,
     odometerNow: parseInt(document.getElementById("odometerNow").value, 10),
     nextServiceDate: document.getElementById("nextServiceDate").value,
@@ -150,6 +192,8 @@ function initForm(){
     if (!car) return;
     document.getElementById("plate").value = car.plate;
     document.getElementById("serviceDate").value = car.serviceDate;
+    if (document.getElementById("make"))  document.getElementById("make").value  = car.make  || "";
+    if (document.getElementById("model")) document.getElementById("model").value = car.model || "";
     document.getElementById("odometerNow").value = car.odometerNow;
     document.getElementById("nextServiceDate").value = car.nextServiceDate;
     document.getElementById("nextOdometer").value = car.nextOdometer;
