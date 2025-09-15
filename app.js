@@ -25,7 +25,7 @@ function renderTabbar(activeKey) {
 
 // ===== Data Helpers =====
 function getCars(){ return JSON.parse(localStorage.getItem("cars") || "[]"); }
-function setCars(cars){ localStorage.setItem("cars", JSON.stringify(cars)); }
+function setCars(cars){ localStorage.setItem("cars", JSON.stringify(cars)); localStorage.setItem("cars_backup", JSON.stringify(cars)); }
 
 // ===== Import / Export =====
 function exportData(){
@@ -155,7 +155,23 @@ function renderHome(){
   }
   const cars = Array.from(map.values());
   const total = cars.length;
-  const home = document.getElementById('home');
+  
+  // ถ้าไม่มีข้อมูลแต่มี backup ใน browser ให้เสนอการกู้คืน
+  try {
+    const hasNoData = !cars.length;
+    const backup = localStorage.getItem('cars_backup');
+    if (hasNoData && backup) {
+      const data = JSON.parse(backup);
+      if (Array.isArray(data) && data.length) {
+        if (confirm('พบข้อมูลสำรองในเบราว์เซอร์ ต้องการกู้คืนหรือไม่?')) {
+          setCars(data);
+          alert('กู้คืนข้อมูลแล้ว');
+          return renderHome();
+        }
+      }
+    }
+  } catch(e){}
+const home = document.getElementById('home');
   let listHTML = '';
   cars.forEach(c => {
     const mm = [c.make, c.model].filter(Boolean).join(' ');
@@ -556,4 +572,32 @@ function renderTypeSection(title, items, allListRef){
     `;
   });
   return html;
+}
+
+
+function restoreFromBackup(){
+  const txt = localStorage.getItem('cars_backup');
+  if (!txt){ alert('ไม่พบข้อมูลสำรองในเบราว์เซอร์'); return; }
+  try{
+    const data = JSON.parse(txt);
+    if (!Array.isArray(data) || !data.length) throw new Error('empty');
+    setCars(data);
+    alert('กู้คืนจาก backup ภายในเบราว์เซอร์สำเร็จ');
+    location.reload();
+  }catch(e){
+    alert('กู้คืนไม่สำเร็จ');
+  }
+}
+
+function importFromTextarea(){
+  const ta = document.getElementById('paste_json');
+  if (!ta || !ta.value.trim()){ alert('ยังไม่มีข้อมูล'); return; }
+  try{
+    const data = JSON.parse(ta.value.trim());
+    setCars(data);
+    alert('นำเข้าจากข้อความสำเร็จ');
+    location.reload();
+  }catch(e){
+    alert('รูปแบบ JSON ไม่ถูกต้อง');
+  }
 }

@@ -41,6 +41,43 @@
         <input type="file" id="import_file" accept="application/json" />
       </div>
     </div>
+  
+    <hr/>
+    <h3>กู้คืน / นำเข้าข้อมูลแบบวางข้อความ</h3>
+    <div class="stat-card" style="flex-direction:column;align-items:flex-start">
+      <button onclick="restoreFromBackup()">♻️ กู้คืนจาก backup ภายในเบราว์เซอร์</button>
+      <label style="margin-top:12px">วาง JSON แล้วกดนำเข้า:</label>
+      <textarea id="paste_json" rows="6" style="width:100%;font-family:ui-monospace,Consolas,monospace"></textarea>
+      <div><button onclick="importFromTextarea()">นำเข้าจากข้อความ</button></div>
+    </div>
+
+  
+    <hr/>
+    <h3>สำรอง/กู้คืนผ่าน Google Drive</h3>
+    <div class="stat-card" style="flex-direction:column;align-items:flex-start">
+      <label>Google API Key</label>
+      <input type="text" id="gapi_key" placeholder="AIza... (API Key)" />
+      <label>OAuth Client ID</label>
+      <input type="text" id="gapi_client" placeholder="1234567890-xxxx.apps.googleusercontent.com" />
+      <label>ชื่อไฟล์บน Drive</label>
+      <input type="text" id="gdrive_filename" placeholder="car_service_backup.json" />
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button type="button" onclick="saveDriveCfg()">บันทึกคีย์</button>
+        <button type="button" onclick="gdriveSignIn()">ลงชื่อเข้าใช้ Google</button>
+        <button type="button" onclick="gdriveSignOut()">ออกจากระบบ</button>
+        <span id="gdrive_status" style="align-self:center;color:#666">ยังไม่เชื่อมต่อ</span>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button type="button" onclick="gdriveBackup()">⬆️ สำรองขึ้น Drive</button>
+        <button type="button" onclick="gdriveRestore()">⬇️ กู้คืนจาก Drive</button>
+      </div>
+      <p style="font-size:12px;color:#666;margin-top:8px">
+        * ต้องมี <b>Google API Key</b> และ <b>OAuth Client ID</b> (OAuth type: Web) พร้อมอนุญาตที่อยู่เว็บของคุณใน Authorized JavaScript origins
+      </p>
+    </div>
+
   </main>
 
   <div id="tabbar">
@@ -51,5 +88,20 @@
       <a href="settings.html" class="active"><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
     </nav>
   </div>
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="drive.js"></script>
+
+  <script>
+    (function(){
+      try{
+        const cfg = JSON.parse(localStorage.getItem('gdrive_cfg')||'{}');
+        if (cfg.apiKey) document.getElementById('gapi_key').value = cfg.apiKey;
+        if (cfg.clientId) document.getElementById('gapi_client').value = cfg.clientId;
+        if (cfg.filename) document.getElementById('gdrive_filename').value = cfg.filename;
+      }catch(e){}
+      if (window.updateGdriveUI) setTimeout(updateGdriveUI, 600);
+    })();
+  </script>
 </body>
+
 </html>
