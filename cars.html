@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Car Service · ข้อมูลรถ</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js"></script>
+</head>
+<body onload="renderCars()">
+  <header><h1>ข้อมูลรถ</h1></header>
+  <main id="car-list"></main>
+  <div id="tabbar"></div>
+
+  <script>
+    function renderCars() {
+      renderTabbar('cars');
+      loadCars();
+    }
+  </script>
+</body>
+</html>
