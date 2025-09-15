@@ -1,19 +1,43 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Car Service Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Car Service · หน้าหลัก</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="mqtt.js"></script>
   <script src="app.js"></script>
 </head>
-<body onload="loadCars()">
-  <header><h1>บันทึกเข้าศูนย์</h1></header>
-  <main>
-    <button onclick="window.location='add.html'">➕ เพิ่มรถ</button>
-    <div id="car-list"></div>
-  </main>
+<body onload="renderHome()">
+  <header><h1>หน้าหลัก</h1></header>
+  <main id="home"></main>
+  <div id="tabbar"></div>
+
+  <script>
+    function renderHome() {
+      mqttConnect();
+      renderTabbar('home');
+      const cars = JSON.parse(localStorage.getItem("cars") || "[]");
+      const total = cars.length;
+
+      const home = document.getElementById('home');
+      home.innerHTML = `
+        <div class="stat-card">
+          <div>
+            <div style="font-size:14px;color:#666;">จำนวนรถในระบบ</div>
+            <div style="font-size:28px;font-weight:800;">${total}</div>
+          </div>
+          <a href="cars.html" class="badge">ดูข้อมูลรถ ➜</a>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:14px;color:#666;">ปุ่มลัด</div>
+          <div>
+            <a href="add.html" class="badge" style="background:#2e7d32;">บันทึกครั้งใหม่</a>
+          </div>
+        </div>
+      `;
+    }
+  </script>
 </body>
 </html>
