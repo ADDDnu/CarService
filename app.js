@@ -1,3 +1,10 @@
+// ===================== Car Service WebApp — app.js (FIXED) =====================
+// - Single definitive implementations (no duplicate functions)
+// - Save works reliably (setCars called)
+// - Vehicle type supported
+// - Home & Cars pages render groups by type
+// - Import/Export + Local backup + Paste-import + Restore
+// - MQTT actions (if mqtt.js loaded): testPublish()
 
 // ===== Bottom Tab Bar =====
 function renderTabbar(activeKey) {
@@ -25,9 +32,13 @@ function renderTabbar(activeKey) {
 
 // ===== Data Helpers =====
 function getCars(){ return JSON.parse(localStorage.getItem("cars") || "[]"); }
-function setCars(cars){ localStorage.setItem("cars", JSON.stringify(cars)); localStorage.setItem("cars_backup", JSON.stringify(cars)); }
+function setCars(cars){
+  localStorage.setItem("cars", JSON.stringify(cars));
+  // local backup to help recovery
+  localStorage.setItem("cars_backup", JSON.stringify(cars));
+}
 
-// ===== Import / Export =====
+// ===== Import / Export (File) =====
 function exportData(){
   const cars = getCars();
   const blob = new Blob([JSON.stringify(cars, null, 2)], {type:'application/json'});
@@ -54,14 +65,50 @@ function importDataFromFile(ev){
   reader.readAsText(file);
 }
 
+// ===== Paste Import / Restore Backup =====
+function restoreFromBackup(){
+  const txt = localStorage.getItem('cars_backup');
+  if (!txt){ alert('ไม่พบข้อมูลสำรองในเบราว์เซอร์'); return; }
+  try{
+    const data = JSON.parse(txt);
+    if (!Array.isArray(data) || !data.length) throw new Error('empty');
+    setCars(data);
+    alert('กู้คืนจาก backup ภายในเบราว์เซอร์สำเร็จ');
+    location.reload();
+  }catch(e){
+    alert('กู้คืนไม่สำเร็จ');
+  }
+}
+
+function importFromTextarea(){
+  const ta = document.getElementById('paste_json');
+  if (!ta || !ta.value.trim()){ alert('ยังไม่มีข้อมูล'); return; }
+  try{
+    const data = JSON.parse(ta.value.trim());
+    setCars(data);
+    alert('นำเข้าจากข้อความสำเร็จ');
+    location.reload();
+  }catch(e){
+    alert('รูปแบบ JSON ไม่ถูกต้อง');
+  }
+}
+
+// ===== Utilities =====
+function vehicleTypeLabel(t){
+  switch(t){
+    case 'car': return 'รถยนต์';
+    case 'motorcycle': return 'รถจักรยานยนต์';
+    case 'agri': return 'รถการเกษตร';
+    default: return 'รถยนต์';
+  }
+}
+
 // ===== Dashboard / Home =====
-
-
 function renderHome(){
   if (typeof mqttConnect === 'function') try{ mqttConnect(); }catch(e){}
   renderTabbar('home');
   const all = getCars();
-  // เก็บรายการล่าสุดต่อทะเบียน
+  // ใช้รายการล่าสุดต่อทะเบียน
   const map = new Map();
   for (let i = all.length - 1; i >= 0; i--) {
     const it = all[i];
@@ -70,11 +117,27 @@ function renderHome(){
   const cars = Array.from(map.values());
   const total = cars.length;
 
-  // แยกตามประเภทรถ
+  // ถ้าไม่มีข้อมูลแต่มีสำรอง เสนอให้กู้คืน
+  try {
+    const hasNoData = !cars.length;
+    const backup = localStorage.getItem('cars_backup');
+    if (hasNoData && backup) {
+      const data = JSON.parse(backup);
+      if (Array.isArray(data) && data.length) {
+        if (confirm('พบข้อมูลสำรองในเบราว์เซอร์ ต้องการกู้คืนหรือไม่?')) {
+          setCars(data);
+          alert('กู้คืนข้อมูลแล้ว');
+          return renderHome();
+        }
+      }
+    }
+  } catch(e){}
+
+  // Group by type
   const groups = { car: [], motorcycle: [], agri: [] };
   cars.forEach(c => { groups[(c.type||'car')]?.push(c); });
 
-  const cardHTML = (c, idx)=>{
+  const cardHTML = (c)=>{
     const mm = [c.make, c.model].filter(Boolean).join(' ');
     const tax = c.taxDueDate || '—';
     return `
@@ -110,102 +173,8 @@ function renderHome(){
     ${(!groups.car.length && !groups.motorcycle.length && !groups.agri.length) ? '<p>ยังไม่มีข้อมูลรถ กด “บันทึก” ที่แท็บล่างเพื่อเพิ่มคันแรก</p>' : ''}
   `;
 }
-  renderTabbar('home');
-  const all = getCars();
-  // เก็บรายการล่าสุดต่อทะเบียน
-  const map = new Map();
-  for (let i = all.length - 1; i >= 0; i--) {
-    const it = all[i];
-    if (!map.has(it.plate)) map.set(it.plate, it);
-  }
-  const cars = Array.from(map.values());
-  const total = cars.length;
-
-  // แยกตามประเภท
-  const groups = {
-    car: cars.filter(c => (c.type||'car') === 'car'),
-    motorcycle: cars.filter(c => c.type === 'motorcycle'),
-    agri: cars.filter(c => c.type === 'agri')
-  };
-
-  const home = document.getElementById('home');
-  let sections = '';
-  sections += renderTypeSection('รถยนต์', groups.car, all);
-  sections += renderTypeSection('รถจักรยานยนต์', groups.motorcycle, all);
-  sections += renderTypeSection('รถการเกษตร', groups.agri, all);
-
-  home.innerHTML = `
-    <div class="stat-card">
-      <div>
-        <div style="font-size:14px;color:#666;">จำนวนรถในระบบ</div>
-        <div style="font-size:28px;font-weight:800;">${total}</div>
-      </div>
-      <a href="cars.html" class="badge">ดูข้อมูลรถ ➜</a>
-    </div>
-    ${sections || '<p>ยังไม่มีข้อมูลรถ กด “บันทึก” ที่แท็บล่างเพื่อเพิ่มคันแรก</p>'}
-  `;
-}
-  renderTabbar('home');
-  const all = getCars();
-  // เก็บรายการล่าสุดต่อทะเบียน
-  const map = new Map();
-  for (let i = all.length - 1; i >= 0; i--) {
-    const it = all[i];
-    if (!map.has(it.plate)) map.set(it.plate, it);
-  }
-  const cars = Array.from(map.values());
-  const total = cars.length;
-  
-  // ถ้าไม่มีข้อมูลแต่มี backup ใน browser ให้เสนอการกู้คืน
-  try {
-    const hasNoData = !cars.length;
-    const backup = localStorage.getItem('cars_backup');
-    if (hasNoData && backup) {
-      const data = JSON.parse(backup);
-      if (Array.isArray(data) && data.length) {
-        if (confirm('พบข้อมูลสำรองในเบราว์เซอร์ ต้องการกู้คืนหรือไม่?')) {
-          setCars(data);
-          alert('กู้คืนข้อมูลแล้ว');
-          return renderHome();
-        }
-      }
-    }
-  } catch(e){}
-const home = document.getElementById('home');
-  let listHTML = '';
-  cars.forEach(c => {
-    const mm = [c.make, c.model].filter(Boolean).join(' ');
-    const tax = c.taxDueDate || '—';
-    listHTML += `
-      <div class="stat-card">
-        <div>
-          <div style="font-size:18px;font-weight:800;">${c.plate}</div>
-          <div style="font-size:13px;color:#666;">${mm || '—'}</div>
-          <div style="font-size:13px;color:#666;">วันสิ้นอายุภาษี: ${tax}</div>
-        </div>
-        <div style="display:flex;gap:8px;align-self:center;">
-          <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${c.plate}')">ดูข้อมูล</a>
-          <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${all.findIndex(r => r.plate===c.plate)}')">แก้ไข</a>
-        </div>
-      </div>
-    `;
-  });
-
-  home.innerHTML = `
-    <div class="stat-card">
-      <div>
-        <div style="font-size:14px;color:#666;">จำนวนรถในระบบ</div>
-        <div style="font-size:28px;font-weight:800;">${total}</div>
-      </div>
-      <a href="cars.html" class="badge">ดูข้อมูลรถ ➜</a>
-    </div>
-    ${listHTML || '<p>ยังไม่มีข้อมูลรถ กด “บันทึก” ที่แท็บล่างเพื่อเพิ่มคันแรก</p>'}
-  `;
-}
 
 // ===== Cars List Page =====
-
-
 function renderCars(){
   renderTabbar('cars');
   const listDiv = document.getElementById('cars-list');
@@ -216,7 +185,7 @@ function renderCars(){
     return;
   }
 
-  // แยกกลุ่มตามประเภทรถ
+  // Group by type
   const groups = { car: [], motorcycle: [], agri: [] };
   items.forEach(car => { groups[(car.type||'car')]?.push(car); });
 
@@ -260,90 +229,6 @@ function renderCars(){
     ${section('รถจักรยานยนต์', groups.motorcycle)}
     ${section('รถการเกษตร', groups.agri)}
   `;
-}
-
-  // แยกตามประเภท
-  const groups = {
-    car: cars.filter(c => (c.type||'car') === 'car'),
-    motorcycle: cars.filter(c => c.type === 'motorcycle'),
-    agri: cars.filter(c => c.type === 'agri')
-  };
-
-  function cardFor(car, index){
-    const selected = [];
-    if (car.maintenance?.engineOil) selected.push("น้ำมันเครื่อง");
-    if (car.maintenance?.oilFilter)  selected.push("ไส้กรองน้ำมันเครื่อง");
-    if (car.maintenance?.airFilter)  selected.push("ไส้กรองอากาศ");
-    const summary = selected.length ? selected.join(", ") : "—";
-    const taxText = car.taxDueDate || "—";
-    const mm = [car.make, car.model].filter(Boolean).join(' ');
-    return `
-      <div class="stat-card">
-        <div>
-          <div style="font-size:18px;font-weight:700;">${car.plate}</div>
-          <div style="font-size:13px;color:#666;">${mm || '—'}</div>
-          <div style="font-size:13px;color:#666;">ประเภท: ${vehicleTypeLabel(car.type)}</div>
-          <div style="font-size:13px;color:#666;">เข้าศูนย์ล่าสุด: ${car.serviceDate} (${car.odometerNow} กม.)</div>
-          <div style="font-size:13px;color:#666;">ครั้งถัดไป: ${car.nextServiceDate} (${car.nextOdometer} กม.)</div>
-          <div style="font-size:13px;color:#666;">วันสิ้นอายุภาษี: ${taxText}</div>
-          <div style="font-size:13px;color:#666;">บำรุงรักษา: ${summary}</div>
-        </div>
-        <div style="display:flex;gap:8px;align-self:center;flex-wrap:wrap;">
-          <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${index}')">แก้ไข</a>
-          <button class="badge" type="button" onclick="testPublish(${index})">ทดสอบ MQTT</button>
-          <button class="badge" type="button" onclick="duplicateCar(${index})">คัดลอก</button>
-          <button class="badge" type="button" onclick="deleteCar(${index})" style="background:#c62828">ลบ</button>
-          <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${car.plate}')">ดูข้อมูล</a>
-        </div>
-      </div>
-    `;
-  }
-
-  let html = '';
-  if (groups.car.length){
-    html += '<h3 style="margin:16px 0 8px;">รถยนต์</h3>';
-    groups.car.forEach((c, i) => { html += cardFor(c, cars.indexOf(c)); });
-  }
-  if (groups.motorcycle.length){
-    html += '<h3 style="margin:16px 0 8px;">รถจักรยานยนต์</h3>';
-    groups.motorcycle.forEach((c, i) => { html += cardFor(c, cars.indexOf(c)); });
-  }
-  if (groups.agri.length){
-    html += '<h3 style="margin:16px 0 8px;">รถการเกษตร</h3>';
-    groups.agri.forEach((c, i) => { html += cardFor(c, cars.indexOf(c)); });
-  }
-
-  listDiv.innerHTML = html;
-}
-
-  listDiv.innerHTML = "";
-  cars.forEach((car, index) => {
-    const selected = [];
-    if (car.maintenance?.engineOil) selected.push("น้ำมันเครื่อง");
-    if (car.maintenance?.oilFilter)  selected.push("ไส้กรองน้ำมันเครื่อง");
-    if (car.maintenance?.airFilter)  selected.push("ไส้กรองอากาศ");
-    const summary = selected.length ? selected.join(", ") : "—";
-    const taxText = car.taxDueDate || "—";
-    const mm = [car.make, car.model].filter(Boolean).join(' ');
-
-    const card = document.createElement('div');
-    card.className = 'stat-card';
-    card.innerHTML = `
-      <div>
-        <div style="font-size:18px;font-weight:700;">${car.plate}</div>
-        <div style="font-size:13px;color:#666;">${mm || '—'}</div>
-        <div style="font-size:13px;color:#666;">เข้าศูนย์ล่าสุด: ${car.serviceDate} (${car.odometerNow} กม.)</div>
-        <div style="font-size:13px;color:#666;">ครั้งถัดไป: ${car.nextServiceDate} (${car.nextOdometer} กม.)</div>
-        <div style="font-size:13px;color:#666;">วันสิ้นอายุภาษี: ${taxText}</div>
-        <div style="font-size:13px;color:#666;">บำรุงรักษา: ${summary}</div>
-      </div>
-      <div style="display:flex;gap:8px;align-self:center;">
-        <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${index}')">แก้ไข</a>
-        <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${car.plate}')">ดูข้อมูล</a>
-      </div>
-    `;
-    listDiv.appendChild(card);
-  });
 }
 
 // ===== Add/Edit Page =====
@@ -408,8 +293,8 @@ function initForm(){
     document.getElementById("plate").value = car.plate;
     if (document.getElementById("make"))  document.getElementById("make").value  = car.make  || "";
     if (document.getElementById("model")) document.getElementById("model").value = car.model || "";
-    document.getElementById("serviceDate").value = car.serviceDate;
     if (document.getElementById("vehicleType")) document.getElementById("vehicleType").value = car.type || "car";
+    document.getElementById("serviceDate").value = car.serviceDate;
     document.getElementById("odometerNow").value = car.odometerNow;
     document.getElementById("nextServiceDate").value = car.nextServiceDate;
     document.getElementById("nextOdometer").value = car.nextOdometer;
@@ -499,8 +384,7 @@ function saveSettings(e){
   alert('บันทึกแล้ว');
 }
 
-
-// ===== Actions on car items =====
+// ===== Actions on car items (Cars page) =====
 function testPublish(index){
   try{ mqttConnect(); }catch(e){}
   const cars = getCars();
@@ -537,67 +421,4 @@ function duplicateCar(index){
   setCars(cars);
   alert('คัดลอกเรียบร้อย');
   renderCars();
-}
-
-
-function vehicleTypeLabel(t){
-  switch(t){
-    case 'car': return 'รถยนต์';
-    case 'motorcycle': return 'รถจักรยานยนต์';
-    case 'agri': return 'รถการเกษตร';
-    default: return 'รถยนต์';
-  }
-}
-
-
-function renderTypeSection(title, items, allListRef){
-  if (!items || !items.length) return '';
-  let html = `<h3 style="margin:16px 0 8px;">${title}</h3>`;
-  items.forEach((c) => {
-    const mm = [c.make, c.model].filter(Boolean).join(' ');
-    const tax = c.taxDueDate || '—';
-    html += `
-      <div class="stat-card">
-        <div>
-          <div style="font-size:18px;font-weight:800;">${c.plate}</div>
-          <div style="font-size:13px;color:#666;">${mm || '—'}</div>
-          <div style="font-size:12px;color:#666;">ประเภท: ${vehicleTypeLabel(c.type)}</div>
-          <div style="font-size:13px;color:#666;">วันสิ้นอายุภาษี: ${tax}</div>
-        </div>
-        <div style="display:flex;gap:8px;align-self:center;">
-          <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${c.plate}')">ดูข้อมูล</a>
-          <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${allListRef.findIndex(r => r.plate===c.plate)}')">แก้ไข</a>
-        </div>
-      </div>
-    `;
-  });
-  return html;
-}
-
-
-function restoreFromBackup(){
-  const txt = localStorage.getItem('cars_backup');
-  if (!txt){ alert('ไม่พบข้อมูลสำรองในเบราว์เซอร์'); return; }
-  try{
-    const data = JSON.parse(txt);
-    if (!Array.isArray(data) || !data.length) throw new Error('empty');
-    setCars(data);
-    alert('กู้คืนจาก backup ภายในเบราว์เซอร์สำเร็จ');
-    location.reload();
-  }catch(e){
-    alert('กู้คืนไม่สำเร็จ');
-  }
-}
-
-function importFromTextarea(){
-  const ta = document.getElementById('paste_json');
-  if (!ta || !ta.value.trim()){ alert('ยังไม่มีข้อมูล'); return; }
-  try{
-    const data = JSON.parse(ta.value.trim());
-    setCars(data);
-    alert('นำเข้าจากข้อความสำเร็จ');
-    location.reload();
-  }catch(e){
-    alert('รูปแบบ JSON ไม่ถูกต้อง');
-  }
 }
