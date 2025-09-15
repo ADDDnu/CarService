@@ -2,7 +2,7 @@
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
 // ====== ตั้งค่าของคุณ ======
-const MQTT_BROKER   = "ws://172.16.18.200:9001";   // WebSocket ของ MQTT
+const MQTT_BROKER   = "ws://adddco.ddns.net:50002";   // WebSocket ของ MQTT
 const MQTT_USERNAME = "mqttadmin";
 const MQTT_PASSWORD = "mqtt1234";
 
@@ -99,3 +99,4 @@ function publishDiscovery(car) {
   );
 }
 </script>
+
