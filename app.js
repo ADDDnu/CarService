@@ -151,6 +151,7 @@ function saveCar(e){
     plate: document.getElementById("plate").value.trim(),
     make:  document.getElementById("make") ? document.getElementById("make").value.trim() : "",
     model: document.getElementById("model") ? document.getElementById("model").value.trim() : "",
+    type:  document.getElementById("vehicleType") ? document.getElementById("vehicleType").value : "car",
     serviceDate: document.getElementById("serviceDate").value,
     odometerNow: parseInt(document.getElementById("odometerNow").value, 10),
     nextServiceDate: document.getElementById("nextServiceDate").value,
@@ -202,6 +203,7 @@ function initForm(){
     if (document.getElementById("make"))  document.getElementById("make").value  = car.make  || "";
     if (document.getElementById("model")) document.getElementById("model").value = car.model || "";
     document.getElementById("serviceDate").value = car.serviceDate;
+    if (document.getElementById("vehicleType")) document.getElementById("vehicleType").value = car.type || "car";
     document.getElementById("odometerNow").value = car.odometerNow;
     document.getElementById("nextServiceDate").value = car.nextServiceDate;
     document.getElementById("nextOdometer").value = car.nextOdometer;
@@ -329,4 +331,14 @@ function duplicateCar(index){
   setCars(cars);
   alert('คัดลอกเรียบร้อย');
   renderCars();
+}
+
+
+function vehicleTypeLabel(t){
+  switch(t){
+    case 'car': return 'รถยนต์';
+    case 'motorcycle': return 'รถจักรยานยนต์';
+    case 'agri': return 'รถการเกษตร';
+    default: return 'รถยนต์';
+  }
 }
