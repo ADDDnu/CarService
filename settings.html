@@ -2,14 +2,15 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Car Service · ตั้งค่า</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <script src="app.js"></script>
 </head>
-<body onload="renderTabbar('settings'); renderSettings()">
+<body class="has-tabbar" onload="renderSettings()">
   <header><h1>ตั้งค่า</h1></header>
+
   <main>
     <form onsubmit="saveSettings(event)">
       <label>MQTT WebSocket URL</label>
@@ -24,25 +25,16 @@
       <button type="submit">บันทึกการตั้งค่า</button>
     </form>
   </main>
-  <div id="tabbar"></div>
 
-  <script>
-    function renderSettings() {
-      const cfg = JSON.parse(localStorage.getItem('cfg')||'{}');
-      document.getElementById('cfg_mqtt_url').value  = cfg.mqtt_url  || '';
-      document.getElementById('cfg_mqtt_user').value = cfg.mqtt_user || '';
-      document.getElementById('cfg_mqtt_pass').value = cfg.mqtt_pass || '';
-    }
-    function saveSettings(e){
-      e.preventDefault();
-      const cfg = {
-        mqtt_url : document.getElementById('cfg_mqtt_url').value.trim(),
-        mqtt_user: document.getElementById('cfg_mqtt_user').value.trim(),
-        mqtt_pass: document.getElementById('cfg_mqtt_pass').value
-      };
-      localStorage.setItem('cfg', JSON.stringify(cfg));
-      alert('บันทึกแล้ว');
-    }
-  </script>
+  
+  <div id="tabbar">
+    <nav class="tabbar">
+      <a href="index.html"    class=""><span class="icon">🏠</span><span>หน้าหลัก</span></a>
+      <a href="cars.html"     class=""><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
+      <a href="add.html"      class=""><span class="icon">📝</span><span>บันทึก</span></a>
+      <a href="settings.html" class="active"><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
+    </nav>
+  </div>
+
 </body>
 </html>
