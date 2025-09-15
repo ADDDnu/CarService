@@ -55,8 +55,96 @@ function importDataFromFile(ev){
 }
 
 // ===== Dashboard / Home =====
+
+
 function renderHome(){
   if (typeof mqttConnect === 'function') try{ mqttConnect(); }catch(e){}
+  renderTabbar('home');
+  const all = getCars();
+  // เก็บรายการล่าสุดต่อทะเบียน
+  const map = new Map();
+  for (let i = all.length - 1; i >= 0; i--) {
+    const it = all[i];
+    if (!map.has(it.plate)) map.set(it.plate, it);
+  }
+  const cars = Array.from(map.values());
+  const total = cars.length;
+
+  // แยกตามประเภทรถ
+  const groups = { car: [], motorcycle: [], agri: [] };
+  cars.forEach(c => { groups[(c.type||'car')]?.push(c); });
+
+  const cardHTML = (c, idx)=>{
+    const mm = [c.make, c.model].filter(Boolean).join(' ');
+    const tax = c.taxDueDate || '—';
+    return `
+      <div class="stat-card">
+        <div>
+          <div style="font-size:18px;font-weight:800;">${c.plate}</div>
+          <div style="font-size:13px;color:#666;">${mm || '—'}</div>
+          <div style="font-size:12px;color:#666;">ประเภท: ${vehicleTypeLabel(c.type)}</div>
+          <div style="font-size:13px;color:#666;">วันสิ้นอายุภาษี: ${tax}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-self:center;">
+          <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${c.plate}')">ดูข้อมูล</a>
+          <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${all.findIndex(r => r.plate===c.plate)}')">แก้ไข</a>
+        </div>
+      </div>
+    `;
+  };
+
+  const section = (title, arr)=> arr.length ? `<h2 class="section-title">${title}</h2>` + arr.map(cardHTML).join('') : '';
+
+  const home = document.getElementById('home');
+  home.innerHTML = `
+    <div class="stat-card">
+      <div>
+        <div style="font-size:14px;color:#666;">จำนวนรถในระบบ</div>
+        <div style="font-size:28px;font-weight:800;">${total}</div>
+      </div>
+      <a href="cars.html" class="badge">ดูข้อมูลรถ ➜</a>
+    </div>
+    ${section('รถยนต์', groups.car)}
+    ${section('รถจักรยานยนต์', groups.motorcycle)}
+    ${section('รถการเกษตร', groups.agri)}
+    ${(!groups.car.length && !groups.motorcycle.length && !groups.agri.length) ? '<p>ยังไม่มีข้อมูลรถ กด “บันทึก” ที่แท็บล่างเพื่อเพิ่มคันแรก</p>' : ''}
+  `;
+}
+  renderTabbar('home');
+  const all = getCars();
+  // เก็บรายการล่าสุดต่อทะเบียน
+  const map = new Map();
+  for (let i = all.length - 1; i >= 0; i--) {
+    const it = all[i];
+    if (!map.has(it.plate)) map.set(it.plate, it);
+  }
+  const cars = Array.from(map.values());
+  const total = cars.length;
+
+  // แยกตามประเภท
+  const groups = {
+    car: cars.filter(c => (c.type||'car') === 'car'),
+    motorcycle: cars.filter(c => c.type === 'motorcycle'),
+    agri: cars.filter(c => c.type === 'agri')
+  };
+
+  const home = document.getElementById('home');
+  let sections = '';
+  sections += renderTypeSection('รถยนต์', groups.car, all);
+  sections += renderTypeSection('รถจักรยานยนต์', groups.motorcycle, all);
+  sections += renderTypeSection('รถการเกษตร', groups.agri, all);
+
+  home.innerHTML = `
+    <div class="stat-card">
+      <div>
+        <div style="font-size:14px;color:#666;">จำนวนรถในระบบ</div>
+        <div style="font-size:28px;font-weight:800;">${total}</div>
+      </div>
+      <a href="cars.html" class="badge">ดูข้อมูลรถ ➜</a>
+    </div>
+    ${sections || '<p>ยังไม่มีข้อมูลรถ กด “บันทึก” ที่แท็บล่างเพื่อเพิ่มคันแรก</p>'}
+  `;
+}
   renderTabbar('home');
   const all = getCars();
   // เก็บรายการล่าสุดต่อทะเบียน
@@ -100,15 +188,117 @@ function renderHome(){
 }
 
 // ===== Cars List Page =====
+
+
 function renderCars(){
   renderTabbar('cars');
   const listDiv = document.getElementById('cars-list');
-  const cars = getCars();
+  const items = getCars();
 
-  if (!cars.length){
+  if (!items.length){
     listDiv.innerHTML = '<p>ยังไม่มีข้อมูลรถ กด “บันทึก” ที่แท็บล่างเพื่อเพิ่มคันแรก</p>';
     return;
   }
+
+  // แยกกลุ่มตามประเภทรถ
+  const groups = { car: [], motorcycle: [], agri: [] };
+  items.forEach(car => { groups[(car.type||'car')]?.push(car); });
+
+  const buildCards = (cars) => {
+    return cars.map((car, index) => {
+      const selected = [];
+      if (car.maintenance?.engineOil) selected.push("น้ำมันเครื่อง");
+      if (car.maintenance?.oilFilter)  selected.push("ไส้กรองน้ำมันเครื่อง");
+      if (car.maintenance?.airFilter)  selected.push("ไส้กรองอากาศ");
+      const summary = selected.length ? selected.join(", ") : "—";
+      const taxText = car.taxDueDate || "—";
+      const mm = [car.make, car.model].filter(Boolean).join(' ');
+
+      return `
+        <div class="stat-card">
+          <div>
+            <div style="font-size:18px;font-weight:700;">${car.plate}</div>
+            <div style="font-size:13px;color:#666;">${mm || '—'}</div>
+            <div style="font-size:13px;color:#666;">ประเภท: ${vehicleTypeLabel(car.type)}</div>
+            <div style="font-size:13px;color:#666;">เข้าศูนย์ล่าสุด: ${car.serviceDate} (${car.odometerNow} กม.)</div>
+            <div style="font-size:13px;color:#666;">ครั้งถัดไป: ${car.nextServiceDate} (${car.nextOdometer} กม.)</div>
+            <div style="font-size:13px;color:#666;">วันสิ้นอายุภาษี: ${taxText}</div>
+            <div style="font-size:13px;color:#666;">บำรุงรักษา: ${summary}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-self:center;flex-wrap:wrap;">
+            <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${index}')">แก้ไข</a>
+            <button class="badge" type="button" onclick="testPublish(${index})">ทดสอบ MQTT</button>
+            <button class="badge" type="button" onclick="duplicateCar(${index})">คัดลอก</button>
+            <button class="badge" type="button" onclick="deleteCar(${index})" style="background:#c62828">ลบ</button>
+            <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${car.plate}')">ดูข้อมูล</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+
+  const section = (title, arr)=> arr.length ? `<h2 class="section-title">${title}</h2>` + buildCards(arr) : '';
+
+  listDiv.innerHTML = `
+    ${section('รถยนต์', groups.car)}
+    ${section('รถจักรยานยนต์', groups.motorcycle)}
+    ${section('รถการเกษตร', groups.agri)}
+  `;
+}
+
+  // แยกตามประเภท
+  const groups = {
+    car: cars.filter(c => (c.type||'car') === 'car'),
+    motorcycle: cars.filter(c => c.type === 'motorcycle'),
+    agri: cars.filter(c => c.type === 'agri')
+  };
+
+  function cardFor(car, index){
+    const selected = [];
+    if (car.maintenance?.engineOil) selected.push("น้ำมันเครื่อง");
+    if (car.maintenance?.oilFilter)  selected.push("ไส้กรองน้ำมันเครื่อง");
+    if (car.maintenance?.airFilter)  selected.push("ไส้กรองอากาศ");
+    const summary = selected.length ? selected.join(", ") : "—";
+    const taxText = car.taxDueDate || "—";
+    const mm = [car.make, car.model].filter(Boolean).join(' ');
+    return `
+      <div class="stat-card">
+        <div>
+          <div style="font-size:18px;font-weight:700;">${car.plate}</div>
+          <div style="font-size:13px;color:#666;">${mm || '—'}</div>
+          <div style="font-size:13px;color:#666;">ประเภท: ${vehicleTypeLabel(car.type)}</div>
+          <div style="font-size:13px;color:#666;">เข้าศูนย์ล่าสุด: ${car.serviceDate} (${car.odometerNow} กม.)</div>
+          <div style="font-size:13px;color:#666;">ครั้งถัดไป: ${car.nextServiceDate} (${car.nextOdometer} กม.)</div>
+          <div style="font-size:13px;color:#666;">วันสิ้นอายุภาษี: ${taxText}</div>
+          <div style="font-size:13px;color:#666;">บำรุงรักษา: ${summary}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-self:center;flex-wrap:wrap;">
+          <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${index}')">แก้ไข</a>
+          <button class="badge" type="button" onclick="testPublish(${index})">ทดสอบ MQTT</button>
+          <button class="badge" type="button" onclick="duplicateCar(${index})">คัดลอก</button>
+          <button class="badge" type="button" onclick="deleteCar(${index})" style="background:#c62828">ลบ</button>
+          <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${car.plate}')">ดูข้อมูล</a>
+        </div>
+      </div>
+    `;
+  }
+
+  let html = '';
+  if (groups.car.length){
+    html += '<h3 style="margin:16px 0 8px;">รถยนต์</h3>';
+    groups.car.forEach((c, i) => { html += cardFor(c, cars.indexOf(c)); });
+  }
+  if (groups.motorcycle.length){
+    html += '<h3 style="margin:16px 0 8px;">รถจักรยานยนต์</h3>';
+    groups.motorcycle.forEach((c, i) => { html += cardFor(c, cars.indexOf(c)); });
+  }
+  if (groups.agri.length){
+    html += '<h3 style="margin:16px 0 8px;">รถการเกษตร</h3>';
+    groups.agri.forEach((c, i) => { html += cardFor(c, cars.indexOf(c)); });
+  }
+
+  listDiv.innerHTML = html;
+}
 
   listDiv.innerHTML = "";
   cars.forEach((car, index) => {
@@ -341,4 +531,29 @@ function vehicleTypeLabel(t){
     case 'agri': return 'รถการเกษตร';
     default: return 'รถยนต์';
   }
+}
+
+
+function renderTypeSection(title, items, allListRef){
+  if (!items || !items.length) return '';
+  let html = `<h3 style="margin:16px 0 8px;">${title}</h3>`;
+  items.forEach((c) => {
+    const mm = [c.make, c.model].filter(Boolean).join(' ');
+    const tax = c.taxDueDate || '—';
+    html += `
+      <div class="stat-card">
+        <div>
+          <div style="font-size:18px;font-weight:800;">${c.plate}</div>
+          <div style="font-size:13px;color:#666;">${mm || '—'}</div>
+          <div style="font-size:12px;color:#666;">ประเภท: ${vehicleTypeLabel(c.type)}</div>
+          <div style="font-size:13px;color:#666;">วันสิ้นอายุภาษี: ${tax}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-self:center;">
+          <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${c.plate}')">ดูข้อมูล</a>
+          <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex','${allListRef.findIndex(r => r.plate===c.plate)}')">แก้ไข</a>
+        </div>
+      </div>
+    `;
+  });
+  return html;
 }
