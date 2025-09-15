@@ -5,11 +5,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Car Service · ตั้งค่า</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="style.css" />
-  <script src="app.js"></script>
+  <script src="app.js" defer></script>
 </head>
 <body class="has-tabbar" onload="renderSettings()">
-  <header><h1>ตั้งค่า</h1></header>
+  <header>
+    <img src="logo.png" alt="Car Service Logo" class="logo">
+    <h1>ตั้งค่า</h1>
+  </header>
 
   <main>
     <form onsubmit="saveSettings(event)">
@@ -24,17 +29,27 @@
 
       <button type="submit">บันทึกการตั้งค่า</button>
     </form>
+
+    <hr/>
+    <h3>นำออก / นำเข้าข้อมูล</h3>
+    <div class="stat-card" style="flex-direction:column;align-items:flex-start">
+      <div>
+        <button onclick="exportData()">⬇️ Export (.json)</button>
+      </div>
+      <div>
+        <label style="margin-top:12px">Import (.json):</label>
+        <input type="file" id="import_file" accept="application/json" />
+      </div>
+    </div>
   </main>
 
-  
   <div id="tabbar">
     <nav class="tabbar">
-      <a href="index.html"    class=""><span class="icon">🏠</span><span>หน้าหลัก</span></a>
-      <a href="cars.html"     class=""><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
-      <a href="add.html"      class=""><span class="icon">📝</span><span>บันทึก</span></a>
+      <a href="index.html"><span class="icon">🏠</span><span>หน้าหลัก</span></a>
+      <a href="cars.html"><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
+      <a href="add.html"><span class="icon">📝</span><span>บันทึก</span></a>
       <a href="settings.html" class="active"><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
     </nav>
   </div>
-
 </body>
 </html>

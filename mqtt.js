@@ -27,18 +27,17 @@ function mqttConnect(){
   return client;
 }
 
-// ส่งข้อมูลครั้งถัดไป + ต่อภาษี + Discovery
+// ส่งข้อมูลครั้งถัดไป + วันสิ้นอายุภาษี (date only) + Discovery
 function mqttPublishCarNext(car){
   if (!client || !client.connected) mqttConnect();
   const topic = `garage/car/${car.plate}/next`;
   const payload = JSON.stringify({
     id: car.plate,
+    make: car.make || "",
+    model: car.model || "",
     next_service_date: car.nextServiceDate,
     next_odometer: car.nextOdometer,
-    tax_due_date: car.taxDueDate,
-    tax_due_time: car.taxDueTime,
-    tax_due_datetime: (car.taxDueDate && car.taxDueTime)
-      ? `${car.taxDueDate}T${car.taxDueTime}:00` : (car.taxDueDate ? `${car.taxDueDate}T00:00:00` : ""),
+    tax_due_date: car.taxDueDate, // YYYY-MM-DD (date only)
     maintenance: car.maintenance || {}
   });
   client.publish(topic, payload, {retain:true});
@@ -64,9 +63,9 @@ function publishDiscovery(car){
       extra:{ unit_of_measurement:"km" }
     },
     {
-      key:'tax_due', name:`Car ${car.plate} Tax Due`,
-      value_template:"{{ value_json.tax_due_datetime }}",
-      extra:{ device_class:"timestamp" }
+      key:'tax_due', name:`Car ${car.plate} Tax Due Date`,
+      value_template:"{{ value_json.tax_due_date }}",
+      extra:{ device_class:"date" } // date only
     }
   ];
 

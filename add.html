@@ -5,13 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Car Service · เพิ่ม/แก้ไข</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="mqtt.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js" defer></script>
 </head>
 <body class="has-tabbar" onload="initForm()">
-  <header><h1>เพิ่ม / แก้ไขรถ</h1></header>
+  <header>
+    <img src="logo.png" alt="Car Service Logo" class="logo">
+    <h1>เพิ่ม / แก้ไขรถ</h1>
+  </header>
 
   <main>
     <form onsubmit="saveCar(event)">
@@ -56,25 +61,20 @@
 
       <hr/>
       <h3>กำหนดต่อภาษี</h3>
-      <label>วันต่อภาษี:</label>
+      <label>วันสิ้นอายุ:</label>
       <input type="date" id="taxDueDate" required />
-
-      <label>เวลา:</label>
-      <input type="time" id="taxDueTime" value="09:00" required />
 
       <button type="submit">บันทึก</button>
     </form>
   </main>
 
-  
   <div id="tabbar">
     <nav class="tabbar">
-      <a href="index.html"    class=""><span class="icon">🏠</span><span>หน้าหลัก</span></a>
-      <a href="cars.html"     class=""><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
-      <a href="add.html"      class="active"><span class="icon">📝</span><span>บันทึก</span></a>
-      <a href="settings.html" class=""><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
+      <a href="index.html"><span class="icon">🏠</span><span>หน้าหลัก</span></a>
+      <a href="cars.html"><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
+      <a href="add.html" class="active"><span class="icon">📝</span><span>บันทึก</span></a>
+      <a href="settings.html"><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
     </nav>
   </div>
-
 </body>
 </html>
