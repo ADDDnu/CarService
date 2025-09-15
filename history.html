@@ -16,11 +16,18 @@
 
   <main id="history-list"></main>
 
-  <div id="tabbar"></div>
+  <!-- Bottom Tab Bar -->
+  <div id="tabbar">
+    <nav class="tabbar">
+      <a href="index.html"><span class="icon">🏠</span><span>หน้าหลัก</span></a>
+      <a href="cars.html" class="active"><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
+      <a href="add.html"><span class="icon">📝</span><span>บันทึก</span></a>
+      <a href="settings.html"><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
+    </nav>
+  </div>
 
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="mqtt.js"></script>
   <script src="app.js"></script>
-  <script>renderTabbar('cars');</script>
 </body>
 </html>
