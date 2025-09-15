@@ -1,43 +1,37 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>เพิ่ม / แก้ไขรถ</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Car Service · บันทึก</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="mqtt.js"></script>
   <script src="app.js"></script>
 </head>
-<body onload="initForm()">
-  <header><h1>เพิ่ม / แก้ไขรถ</h1></header>
+<body onload="initForm(); renderTabbar('log')">
+  <header><h1>เพิ่ม / แก้ไข รถ</h1></header>
+  <main>
+    <form onsubmit="saveCar(event)">
+      <label>ทะเบียน:</label>
+      <input type="text" id="plate" required>
 
-  <form onsubmit="saveCar(event)">
-    <label>ทะเบียน:</label>
-    <input type="text" id="plate" required />
+      <label>วันที่เข้ารับบริการ:</label>
+      <input type="date" id="serviceDate" required>
 
-    <label>วันที่เข้ารับบริการ:</label>
-    <input type="date" id="serviceDate" required />
+      <label>เลขกม. ล่าสุด:</label>
+      <input type="number" id="odometerNow" required>
 
-    <label>เลขกม. ล่าสุด:</label>
-    <input type="number" id="odometerNow" required />
+      <label>วันที่นัดครั้งต่อไป:</label>
+      <input type="date" id="nextServiceDate" required>
 
-    <label>วันที่นัดครั้งต่อไป:</label>
-    <input type="date" id="nextServiceDate" required />
+      <label>เลขกม. นัดหมาย:</label>
+      <input type="number" id="nextOdometer" required>
 
-    <label>เลขกม. นัดหมาย:</label>
-    <input type="number" id="nextOdometer" required />
-
-    <hr/>
-
-    <h3>กำหนดต่อภาษี</h3>
-    <label>วันต่อภาษี:</label>
-    <input type="date" id="taxDueDate" required />
-
-    <label>เวลา:</label>
-    <input type="time" id="taxDueTime" value="09:00" required />
-
-    <button type="submit">บันทึก</button>
-  </form>
-</body>
-</html>
+      <hr/>
+      <h3>รายการบำรุงรักษา</h3>
+      <div class="grid-check">
+        <label><input type="checkbox" id="m_engineOil"> น้ำมันเครื่อง</label>
+        <label><input type="checkbox" id="m_gearOil"> น้ำมันเกียร์</label>
+        <label><input type="checkbox" id="m_coolant"> น้ำยาหม้อน้ำ</label>
+        <label><input type="checkbox" id="m_flushingOil"> ฟลัชซิ่งออยล์</
