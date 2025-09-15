@@ -290,3 +290,43 @@ function saveSettings(e){
   localStorage.setItem('cfg', JSON.stringify(cfg));
   alert('บันทึกแล้ว');
 }
+
+
+// ===== Actions on car items =====
+function testPublish(index){
+  try{ mqttConnect(); }catch(e){}
+  const cars = getCars();
+  const car = cars[index];
+  if (!car){ alert('ไม่พบข้อมูลรถ'); return; }
+  try{
+    mqttPublishCarNext(car);
+    alert('ส่ง MQTT ทดสอบแล้ว');
+  }catch(err){
+    console.error(err);
+    alert('ส่ง MQTT ไม่สำเร็จ');
+  }
+}
+
+function deleteCar(index){
+  const cars = getCars();
+  const car = cars[index];
+  if (!car){ return; }
+  if (!confirm(`ลบรถทะเบียน ${car.plate}?`)) return;
+  cars.splice(index, 1);
+  setCars(cars);
+  renderCars();
+}
+
+function duplicateCar(index){
+  const cars = getCars();
+  const car = cars[index];
+  if (!car){ return; }
+  const newPlate = prompt('ระบุทะเบียนใหม่สำหรับคัดลอก', `${car.plate}-copy`);
+  if (!newPlate){ return; }
+  const clone = JSON.parse(JSON.stringify(car));
+  clone.plate = newPlate.trim();
+  cars.push(clone);
+  setCars(cars);
+  alert('คัดลอกเรียบร้อย');
+  renderCars();
+}
