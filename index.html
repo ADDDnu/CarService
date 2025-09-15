@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -5,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Car Service · หน้าหลัก</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="mqtt.js"></script>
   <script src="app.js"></script>
@@ -16,7 +18,7 @@
 
   <script>
     function renderHome() {
-      mqttConnect();
+      try { mqttConnect(); } catch(e){ console.warn(e); }
       renderTabbar('home');
       const cars = JSON.parse(localStorage.getItem("cars") || "[]");
       const total = cars.length;

@@ -1,0 +1,9 @@
+{
+  "name": "Car Service Manager",
+  "short_name": "CarService",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0b79d0",
+  "theme_color": "#0b79d0",
+  "icons": []
+}

@@ -1,3 +1,4 @@
+
 // ===== Bottom Tab Bar =====
 function renderTabbar(activeKey) {
   const tabbar = document.getElementById('tabbar');
@@ -24,21 +25,23 @@ function renderTabbar(activeKey) {
 
 // ===== Car Management =====
 function loadCars() {
-  mqttConnect();
+  try { mqttConnect(); } catch(e){ console.warn(e); }
   const cars = JSON.parse(localStorage.getItem("cars") || "[]");
   const listDiv = document.getElementById("car-list");
+  if (!listDiv) return;
   listDiv.innerHTML = "";
 
   cars.forEach((car, index) => {
-    mqttPublishCarNext(car);
+    try { mqttPublishCarNext(car); } catch(e){ console.warn(e); }
     const div = document.createElement("div");
     div.className = "stat-card";
+    const taxTxt = car.taxDueDate ? `${car.taxDueDate} ${car.taxDueTime || ""}` : "—";
     div.innerHTML = `
       <div>
         <div style="font-size:18px;font-weight:700;">${car.plate}</div>
         <div style="font-size:13px;color:#666;">เข้าศูนย์ล่าสุด: ${car.serviceDate} (${car.odometerNow} กม.)</div>
         <div style="font-size:13px;color:#666;">ครั้งถัดไป: ${car.nextServiceDate} (${car.nextOdometer} กม.)</div>
-        <div style="font-size:13px;color:#666;">ต่อภาษี: ${car.taxDueDate} ${car.taxDueTime}</div>
+        <div style="font-size:13px;color:#666;">ต่อภาษี: ${taxTxt}</div>
       </div>
       <div>
         <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex',${index})">แก้ไข</a>
@@ -51,7 +54,7 @@ function loadCars() {
 
 function saveCar(e) {
   e.preventDefault();
-  mqttConnect();
+  try { mqttConnect(); } catch(e){ console.warn(e); }
 
   const cars = JSON.parse(localStorage.getItem("cars") || "[]");
   const idx = localStorage.getItem("editIndex");
@@ -59,9 +62,9 @@ function saveCar(e) {
   const car = {
     plate: document.getElementById("plate").value.trim(),
     serviceDate: document.getElementById("serviceDate").value,
-    odometerNow: parseInt(document.getElementById("odometerNow").value, 10),
+    odometerNow: parseInt(document.getElementById("odometerNow").value || "0", 10),
     nextServiceDate: document.getElementById("nextServiceDate").value,
-    nextOdometer: parseInt(document.getElementById("nextOdometer").value, 10),
+    nextOdometer: parseInt(document.getElementById("nextOdometer").value || "0", 10),
 
     maintenance: {
       engineOil:   document.getElementById("m_engineOil").checked,
@@ -88,7 +91,7 @@ function saveCar(e) {
     cars.push(car);
   }
   localStorage.setItem("cars", JSON.stringify(cars));
-  mqttPublishCarNext(car);
+  try { mqttPublishCarNext(car); } catch(e){ console.warn(e); }
 
   alert("บันทึกเรียบร้อย");
   window.location = "cars.html";
@@ -100,32 +103,32 @@ function editCar(index) {
 }
 
 function initForm() {
-  mqttConnect();
+  try { mqttConnect(); } catch(e){ console.warn(e); }
   const idx = localStorage.getItem("editIndex");
   if (idx !== null && idx !== "null") {
     const cars = JSON.parse(localStorage.getItem("cars"));
     const car = cars[parseInt(idx, 10)];
 
-    document.getElementById("plate").value = car.plate;
-    document.getElementById("serviceDate").value = car.serviceDate;
-    document.getElementById("odometerNow").value = car.odometerNow;
-    document.getElementById("nextServiceDate").value = car.nextServiceDate;
-    document.getElementById("nextOdometer").value = car.nextOdometer;
-    document.getElementById("taxDueDate").value = car.taxDueDate;
-    document.getElementById("taxDueTime").value = car.taxDueTime;
+    document.getElementById("plate").value = car.plate || "";
+    document.getElementById("serviceDate").value = car.serviceDate || "";
+    document.getElementById("odometerNow").value = car.odometerNow || "";
+    document.getElementById("nextServiceDate").value = car.nextServiceDate || "";
+    document.getElementById("nextOdometer").value = car.nextOdometer || "";
+    document.getElementById("taxDueDate").value = car.taxDueDate || "";
+    document.getElementById("taxDueTime").value = car.taxDueTime || "";
 
     if (car.maintenance) {
-      document.getElementById("m_engineOil").checked = car.maintenance.engineOil;
-      document.getElementById("m_gearOil").checked = car.maintenance.gearOil;
-      document.getElementById("m_coolant").checked = car.maintenance.coolant;
-      document.getElementById("m_flushingOil").checked = car.maintenance.flushingOil;
-      document.getElementById("m_oilFilter").checked = car.maintenance.oilFilter;
-      document.getElementById("m_diffOil").checked = car.maintenance.diffOil;
-      document.getElementById("m_airFilter").checked = car.maintenance.airFilter;
-      document.getElementById("m_brakeFluid").checked = car.maintenance.brakeFluid;
-      document.getElementById("m_wiper").checked = car.maintenance.wiper;
-      document.getElementById("m_psFluid").checked = car.maintenance.psFluid;
-      document.getElementById("m_notes").value = car.maintenance.notes;
+      document.getElementById("m_engineOil").checked = !!car.maintenance.engineOil;
+      document.getElementById("m_gearOil").checked = !!car.maintenance.gearOil;
+      document.getElementById("m_coolant").checked = !!car.maintenance.coolant;
+      document.getElementById("m_flushingOil").checked = !!car.maintenance.flushingOil;
+      document.getElementById("m_oilFilter").checked = !!car.maintenance.oilFilter;
+      document.getElementById("m_diffOil").checked = !!car.maintenance.diffOil;
+      document.getElementById("m_airFilter").checked = !!car.maintenance.airFilter;
+      document.getElementById("m_brakeFluid").checked = !!car.maintenance.brakeFluid;
+      document.getElementById("m_wiper").checked = !!car.maintenance.wiper;
+      document.getElementById("m_psFluid").checked = !!car.maintenance.psFluid;
+      document.getElementById("m_notes").value = car.maintenance.notes || "";
     }
   }
 }
@@ -141,7 +144,8 @@ function loadHistory() {
   const filtered = cars.filter(c => c.plate === plate);
 
   const listDiv = document.getElementById("history-list");
-  listDiv.innerHTML = `<h2>${plate}</h2>`;
+  if (!listDiv) return;
+  listDiv.innerHTML = `<h2>${plate || ""}</h2>`;
 
   filtered.forEach(item => {
     const m = item.maintenance || {};
