@@ -1,4 +1,28 @@
-<script>
+// ===== Bottom Tab Bar =====
+function renderTabbar(activeKey) {
+  const tabbar = document.getElementById('tabbar');
+  if (!tabbar) return;
+  const isActive = k => (k === activeKey ? 'active' : '');
+  tabbar.innerHTML = `
+    <nav class="tabbar">
+      <a href="index.html" class="${isActive('home')}">
+        <span class="icon">🏠</span><span>หน้าหลัก</span>
+      </a>
+      <a href="cars.html" class="${isActive('cars')}">
+        <span class="icon">🚗</span><span>ข้อมูลรถ</span>
+      </a>
+      <a href="add.html" class="${isActive('log')}">
+        <span class="icon">📝</span><span>บันทึก</span>
+      </a>
+      <a href="settings.html" class="${isActive('settings')}">
+        <span class="icon">⚙️</span><span>ตั้งค่า</span>
+      </a>
+    </nav>
+  `;
+  document.body.classList.add('has-tabbar');
+}
+
+// ===== Car Management =====
 function loadCars() {
   mqttConnect();
   const cars = JSON.parse(localStorage.getItem("cars") || "[]");
@@ -6,18 +30,20 @@ function loadCars() {
   listDiv.innerHTML = "";
 
   cars.forEach((car, index) => {
-    // ส่ง MQTT (retain) + discovery ทุกครั้งที่เปิดหน้า เพื่อให้ HA อัปเดต
     mqttPublishCarNext(car);
-
     const div = document.createElement("div");
-    div.className = "car-card";
+    div.className = "stat-card";
     div.innerHTML = `
-      <h3>${car.plate}</h3>
-      <p>เข้าศูนย์ล่าสุด: ${car.serviceDate} (${car.odometerNow} กม.)</p>
-      <p>ครั้งถัดไป: ${car.nextServiceDate} (${car.nextOdometer} กม.)</p>
-      <p>ต่อภาษี: ${car.taxDueDate} เวลา ${car.taxDueTime}</p>
-      <button onclick="editCar(${index})">แก้ไข</button>
-      <button onclick="viewHistory('${car.plate}')">ประวัติ</button>
+      <div>
+        <div style="font-size:18px;font-weight:700;">${car.plate}</div>
+        <div style="font-size:13px;color:#666;">เข้าศูนย์ล่าสุด: ${car.serviceDate} (${car.odometerNow} กม.)</div>
+        <div style="font-size:13px;color:#666;">ครั้งถัดไป: ${car.nextServiceDate} (${car.nextOdometer} กม.)</div>
+        <div style="font-size:13px;color:#666;">ต่อภาษี: ${car.taxDueDate} ${car.taxDueTime}</div>
+      </div>
+      <div>
+        <a class="badge" href="add.html" onclick="localStorage.setItem('editIndex',${index})">แก้ไข</a>
+        <a class="badge" href="history.html" onclick="localStorage.setItem('historyPlate','${car.plate}')">ประวัติ</a>
+      </div>
     `;
     listDiv.appendChild(div);
   });
@@ -28,13 +54,29 @@ function saveCar(e) {
   mqttConnect();
 
   const cars = JSON.parse(localStorage.getItem("cars") || "[]");
-  const idx  = localStorage.getItem("editIndex");
-  const car  = {
+  const idx = localStorage.getItem("editIndex");
+
+  const car = {
     plate: document.getElementById("plate").value.trim(),
     serviceDate: document.getElementById("serviceDate").value,
     odometerNow: parseInt(document.getElementById("odometerNow").value, 10),
     nextServiceDate: document.getElementById("nextServiceDate").value,
     nextOdometer: parseInt(document.getElementById("nextOdometer").value, 10),
+
+    maintenance: {
+      engineOil:   document.getElementById("m_engineOil").checked,
+      gearOil:     document.getElementById("m_gearOil").checked,
+      coolant:     document.getElementById("m_coolant").checked,
+      flushingOil: document.getElementById("m_flushingOil").checked,
+      oilFilter:   document.getElementById("m_oilFilter").checked,
+      diffOil:     document.getElementById("m_diffOil").checked,
+      airFilter:   document.getElementById("m_airFilter").checked,
+      brakeFluid:  document.getElementById("m_brakeFluid").checked,
+      wiper:       document.getElementById("m_wiper").checked,
+      psFluid:     document.getElementById("m_psFluid").checked,
+      notes:       document.getElementById("m_notes").value.trim()
+    },
+
     taxDueDate: document.getElementById("taxDueDate").value,
     taxDueTime: document.getElementById("taxDueTime").value
   };
@@ -46,12 +88,10 @@ function saveCar(e) {
     cars.push(car);
   }
   localStorage.setItem("cars", JSON.stringify(cars));
-
-  // ส่ง MQTT + Discovery ทันทีหลังบันทึก
   mqttPublishCarNext(car);
 
   alert("บันทึกเรียบร้อย");
-  window.location = "index.html";
+  window.location = "cars.html";
 }
 
 function editCar(index) {
@@ -61,17 +101,32 @@ function editCar(index) {
 
 function initForm() {
   mqttConnect();
-  const index = localStorage.getItem("editIndex");
-  if (index !== null && index !== "null") {
+  const idx = localStorage.getItem("editIndex");
+  if (idx !== null && idx !== "null") {
     const cars = JSON.parse(localStorage.getItem("cars"));
-    const car = cars[parseInt(index, 10)];
+    const car = cars[parseInt(idx, 10)];
+
     document.getElementById("plate").value = car.plate;
     document.getElementById("serviceDate").value = car.serviceDate;
     document.getElementById("odometerNow").value = car.odometerNow;
     document.getElementById("nextServiceDate").value = car.nextServiceDate;
     document.getElementById("nextOdometer").value = car.nextOdometer;
-    document.getElementById("taxDueDate").value = car.taxDueDate || "";
-    document.getElementById("taxDueTime").value = car.taxDueTime || "09:00";
+    document.getElementById("taxDueDate").value = car.taxDueDate;
+    document.getElementById("taxDueTime").value = car.taxDueTime;
+
+    if (car.maintenance) {
+      document.getElementById("m_engineOil").checked = car.maintenance.engineOil;
+      document.getElementById("m_gearOil").checked = car.maintenance.gearOil;
+      document.getElementById("m_coolant").checked = car.maintenance.coolant;
+      document.getElementById("m_flushingOil").checked = car.maintenance.flushingOil;
+      document.getElementById("m_oilFilter").checked = car.maintenance.oilFilter;
+      document.getElementById("m_diffOil").checked = car.maintenance.diffOil;
+      document.getElementById("m_airFilter").checked = car.maintenance.airFilter;
+      document.getElementById("m_brakeFluid").checked = car.maintenance.brakeFluid;
+      document.getElementById("m_wiper").checked = car.maintenance.wiper;
+      document.getElementById("m_psFluid").checked = car.maintenance.psFluid;
+      document.getElementById("m_notes").value = car.maintenance.notes;
+    }
   }
 }
 
@@ -83,16 +138,33 @@ function viewHistory(plate) {
 function loadHistory() {
   const plate = localStorage.getItem("historyPlate");
   const cars = JSON.parse(localStorage.getItem("cars") || "[]");
-  const items = cars.filter(c => c.plate === plate);
+  const filtered = cars.filter(c => c.plate === plate);
+
   const listDiv = document.getElementById("history-list");
   listDiv.innerHTML = `<h2>${plate}</h2>`;
-  items.forEach(item => {
+
+  filtered.forEach(item => {
+    const m = item.maintenance || {};
+    const sel = [];
+    if (m.engineOil) sel.push("น้ำมันเครื่อง");
+    if (m.gearOil) sel.push("น้ำมันเกียร์");
+    if (m.coolant) sel.push("น้ำยาหม้อน้ำ");
+    if (m.flushingOil) sel.push("ฟลัชซิ่งออยล์");
+    if (m.oilFilter) sel.push("ไส้กรองน้ำมันเครื่อง");
+    if (m.diffOil) sel.push("น้ำมันเฟืองท้าย");
+    if (m.airFilter) sel.push("ไส้กรองอากาศ");
+    if (m.brakeFluid) sel.push("น้ำมันเบรก");
+    if (m.wiper) sel.push("ใบปัดน้ำฝน");
+    if (m.psFluid) sel.push("น้ำมันพวงมาลัยเพาเวอร์");
+
     listDiv.innerHTML += `
-      <div class="history-item">
-        <p>เข้าศูนย์: ${item.serviceDate} (${item.odometerNow} กม.)</p>
-        <p>ครั้งถัดไป: ${item.nextServiceDate} (${item.nextOdometer} กม.)</p>
-        <p>ต่อภาษี: ${item.taxDueDate} เวลา ${item.taxDueTime}</p>
-      </div>`;
+      <div class="stat-card" style="flex-direction:column;align-items:flex-start;">
+        <p><strong>วันที่เข้ารับบริการ:</strong> ${item.serviceDate}</p>
+        <p><strong>เลขกม.:</strong> ${item.odometerNow}</p>
+        <p><strong>นัดครั้งถัดไป:</strong> ${item.nextServiceDate} (${item.nextOdometer} กม.)</p>
+        <p><strong>รายการบำรุงรักษา:</strong> ${sel.length ? sel.join(", ") : "—"}</p>
+        ${m.notes ? `<p><strong>หมายเหตุ:</strong> ${m.notes}</p>` : ""}
+      </div>
+    `;
   });
 }
-</script>
