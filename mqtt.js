@@ -1,31 +1,35 @@
 
-// ===== MQTT WebSocket Config =====
-function getMqttConfig() {
-  const cfg = JSON.parse(localStorage.getItem('cfg') || '{}');
+// mqtt.js
+// อ่านค่าจาก Settings (LocalStorage) ถ้าไม่มีใช้ค่า default
+function readCfg(){
+  let cfg = {};
+  try{ cfg = JSON.parse(localStorage.getItem('cfg')||'{}'); } catch(e){ cfg = {}; }
   return {
-    url: cfg.mqtt_url || "ws://172.16.18.200:9001",
-    user: cfg.mqtt_user || "mqttadmin",
-    pass: cfg.mqtt_pass || "mqtt1234",
+    url  : cfg.mqtt_url  || "ws://172.16.18.200:9001",
+    user : cfg.mqtt_user || "mqttadmin",
+    pass : cfg.mqtt_pass || "mqtt1234"
   };
 }
 
 let client = null;
 
-function mqttConnect() {
+function mqttConnect(){
   if (client && client.connected) return client;
-  const cfg = getMqttConfig();
+  const cfg = readCfg();
+  // eslint-disable-next-line no-undef
   client = mqtt.connect(cfg.url, {
     username: cfg.user,
     password: cfg.pass,
-    reconnectPeriod: 2000,
+    reconnectPeriod: 2000
   });
-  client.on("connect", () => console.log("MQTT Connected"));
-  client.on("error", (err) => console.error("MQTT Error:", err));
+  client.on('connect', ()=>console.log('MQTT connected'));
+  client.on('error',   err=>console.error('MQTT error:', err));
   return client;
 }
 
-function mqttPublishCarNext(car) {
-  if (!client || !client.connected) return;
+// ส่งข้อมูลครั้งถัดไป + ต่อภาษี + Discovery
+function mqttPublishCarNext(car){
+  if (!client || !client.connected) mqttConnect();
   const topic = `garage/car/${car.plate}/next`;
   const payload = JSON.stringify({
     id: car.plate,
@@ -34,10 +38,49 @@ function mqttPublishCarNext(car) {
     tax_due_date: car.taxDueDate,
     tax_due_time: car.taxDueTime,
     tax_due_datetime: (car.taxDueDate && car.taxDueTime)
-      ? `${car.taxDueDate}T${car.taxDueTime}:00` 
-      : (car.taxDueDate ? `${car.taxDueDate}T00:00:00` : ""),
+      ? `${car.taxDueDate}T${car.taxDueTime}:00` : (car.taxDueDate ? `${car.taxDueDate}T00:00:00` : ""),
     maintenance: car.maintenance || {}
   });
-  client.publish(topic, payload, { retain: true });
-  console.log("MQTT Publish:", topic, payload);
+  client.publish(topic, payload, {retain:true});
+  console.log('MQTT publish:', topic, payload);
+  publishDiscovery(car);
+}
+
+function publishDiscovery(car){
+  const dev = {
+    identifiers: [`car_${car.plate}`],
+    name: `Car ${car.plate}`,
+    manufacturer: "Car Service WebApp"
+  };
+
+  const entries = [
+    {
+      key:'service_date', name:`Car ${car.plate} Next Service`,
+      value_template:"{{ value_json.next_service_date }}", extra:{}
+    },
+    {
+      key:'next_odometer', name:`Car ${car.plate} Next Odometer`,
+      value_template:"{{ value_json.next_odometer }}",
+      extra:{ unit_of_measurement:"km" }
+    },
+    {
+      key:'tax_due', name:`Car ${car.plate} Tax Due`,
+      value_template:"{{ value_json.tax_due_datetime }}",
+      extra:{ device_class:"timestamp" }
+    }
+  ];
+
+  entries.forEach(ent=>{
+    const cfgTopic = `homeassistant/sensor/car_${car.plate}_${ent.key}/config`;
+    const cfgPayload = JSON.stringify(Object.assign({
+      name: ent.name,
+      object_id: `car_${car.plate}_${ent.key}`,
+      unique_id: `car_${car.plate}_${ent.key}`,
+      state_topic: `garage/car/${car.plate}/next`,
+      value_template: ent.value_template,
+      json_attributes_topic: `garage/car/${car.plate}/next`,
+      device: dev
+    }, ent.extra || {}));
+    client.publish(cfgTopic, cfgPayload, {retain:true});
+  });
 }

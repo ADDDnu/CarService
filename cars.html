@@ -2,21 +2,24 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Car Service · ข้อมูลรถ</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <script src="app.js"></script>
 </head>
-<body onload="renderCars()">
+<body class="has-tabbar" onload="renderCars()">
   <header><h1>ข้อมูลรถ</h1></header>
-  <main id="car-list"></main>
-  <div id="tabbar"></div>
-  <script>
-    function renderCars() {
-      renderTabbar('cars');
-      loadCars();
-    }
-  </script>
+  <main id="cars-list"></main>
+  
+  <div id="tabbar">
+    <nav class="tabbar">
+      <a href="index.html"    class=""><span class="icon">🏠</span><span>หน้าหลัก</span></a>
+      <a href="cars.html"     class="active"><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
+      <a href="add.html"      class=""><span class="icon">📝</span><span>บันทึก</span></a>
+      <a href="settings.html" class=""><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
+    </nav>
+  </div>
+
 </body>
 </html>

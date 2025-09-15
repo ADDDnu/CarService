@@ -2,15 +2,24 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Car Service · ประวัติย้อนหลัง</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <script src="app.js"></script>
 </head>
-<body onload="loadHistory(); renderTabbar('cars')">
+<body class="has-tabbar" onload="loadHistory()">
   <header><h1>ประวัติย้อนหลัง</h1></header>
   <main id="history-list"></main>
-  <div id="tabbar"></div>
+  
+  <div id="tabbar">
+    <nav class="tabbar">
+      <a href="index.html"    class=""><span class="icon">🏠</span><span>หน้าหลัก</span></a>
+      <a href="cars.html"     class="active"><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
+      <a href="add.html"      class=""><span class="icon">📝</span><span>บันทึก</span></a>
+      <a href="settings.html" class=""><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
+    </nav>
+  </div>
+
 </body>
 </html>

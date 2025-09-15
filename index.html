@@ -2,44 +2,26 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Car Service · หน้าหลัก</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="mqtt.js"></script>
   <script src="app.js"></script>
 </head>
-<body onload="renderHome()">
+<body class="has-tabbar" onload="renderHome()">
   <header><h1>หน้าหลัก</h1></header>
   <main id="home"></main>
-  <div id="tabbar"></div>
+  
+  <div id="tabbar">
+    <nav class="tabbar">
+      <a href="index.html"    class="active"><span class="icon">🏠</span><span>หน้าหลัก</span></a>
+      <a href="cars.html"     class=""><span class="icon">🚗</span><span>ข้อมูลรถ</span></a>
+      <a href="add.html"      class=""><span class="icon">📝</span><span>บันทึก</span></a>
+      <a href="settings.html" class=""><span class="icon">⚙️</span><span>ตั้งค่า</span></a>
+    </nav>
+  </div>
 
-  <script>
-    function renderHome() {
-      try { mqttConnect(); } catch(e){ console.warn(e); }
-      renderTabbar('home');
-      const cars = JSON.parse(localStorage.getItem("cars") || "[]");
-      const total = cars.length;
-
-      const home = document.getElementById('home');
-      home.innerHTML = `
-        <div class="stat-card">
-          <div>
-            <div style="font-size:14px;color:#666;">จำนวนรถในระบบ</div>
-            <div style="font-size:28px;font-weight:800;">${total}</div>
-          </div>
-          <a href="cars.html" class="badge">ดูข้อมูลรถ ➜</a>
-        </div>
-        <div class="stat-card">
-          <div style="font-size:14px;color:#666;">ปุ่มลัด</div>
-          <div>
-            <a href="add.html" class="badge" style="background:#2e7d32;">บันทึกครั้งใหม่</a>
-          </div>
-        </div>
-      `;
-    }
-  </script>
 </body>
 </html>
